@@ -1,5 +1,3 @@
-
-
 exports.dispatch = function( req, res ) {
     var customer, subscription;
 
