@@ -7,17 +7,25 @@
 // Public
 // recurring
 
+const stripe = require('stripe')( process.env.STRIPE_PRIVATE );
+const firebase = require('./firebase.js');
 
 function createCustomer( fields ) {
     return new Promise(( resolve, reject ) => {
+        // Metadata storage is nice for an redundent data layer for FEC rules
+        // Address helps Stripe's fraud detection
         stripe.customers.create({
             email: fields.email,
             source: fields.token,
-            description: `${ fields.firstname } ${ fields.lastname } <${ fields.email }>`,
+            description: `${ fields.given_name } ${ fields.family_name } <${ fields.email }>`,
             metadata: {
-                created_at: new Date()
+                created_date: new Date(),
+                modified_date: new Date(),
+                employer: fields.employer,
+                occupation: fields.occupation
             },
             shipping: {
+                name: `${ fields.firstname } ${ fields.lastname }`,
                 address: {
                     line1: fields.mailing_street1,
                     city: fields.mailing_city,
@@ -26,9 +34,9 @@ function createCustomer( fields ) {
                     country: fields.mailing_country
                 }
             }
-        }).then(() = > {
-            firebase.createCustomer( fields, customerID ).then(() => {
-                resolve( customerID )
+        }, ( error, customer ) => {
+            firebase.createCustomer( fields, customer.id ).then(() => {
+                resolve( customer.id )
             })
         })
     })
@@ -58,7 +66,7 @@ function findOrCreateCustomer( fields ) {
     })
 };
 
-export default function single( fields ) {
+exports.single = ( fields ) => {
     return new Promise(( resolve, reject ) => {
         // TODO: This will use customers saved card. We want to connect
         // transactions to customer without saving their card for default
@@ -66,15 +74,17 @@ export default function single( fields ) {
             stripe.charges.create({
                 amount: fields.amount * 100, // Amount is in cents
                 currency: "usd",
-                source: customerID,
+                customer: customerID,
                 description: "Donation to #####"
                 // destination
-            }, ( error, charge ) {
+            }, ( error, charge ) => {
                 if ( !error && charge ) {
                     resolve( charge.id );
                 } else {
-                    resject( error );
+                    console.log(error);
+                    reject( error );
                 }
             });
-        })
+        });
+    });
 }

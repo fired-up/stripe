@@ -7,7 +7,7 @@ const firebase = require('firebase-admin');
 
 const DONORS_REF = 'donors';
 
-function getCustomer( email ) {
+exports.getCustomer = ( email ) => {
     return new Promise(( resolve, reject ) => {
         // This will be a lot faster on FireStore
         firebase.database().ref( DONORS_REF )
@@ -15,53 +15,53 @@ function getCustomer( email ) {
                 const values = _.values( snapshot.val() );
 
                 const customer = _.find( values, ( customer ) => {
-                    const email = _find( customer.email_addresses, ( email ) => {
+                    const email = _.find( customer.email_addresses, ( email ) => {
                         return email.address === email;
                     });
 
                     return !!email;
                 });
 
-                if ( customer ) {
-                    resolve( customer );
-                } else {
-                    resolve( false );
-                }
+                resolve( customer || false );
             });
     });
 }
 
-function createCustomer( fields, customerID ) {
+exports.createCustomer = ( fields, customerID ) => {
     return new Promise(( resolve, reject ) => {
-        firebase.database.ref( DONORS_REF ).push({
+        const key = firebase.database().ref(DONORS_REF).push().key;
+        const ref = firebase.database().ref( `${ DONORS_REF }/${ key }` );
+
+        ref.set({
             employer: fields.employer,
+            occupation: fields.employer,
             given_name: fields.given_name,
             family_name: fields.family_name,
-            created_date: fields.created_date,
-            modified_date: fields.modified_date
+            created_date: new Date(),
+            modified_date: new Date(),
             identifiers: [
                 `stripe:${ customerID }`
             ],
             email_addresses: [{
                 primary: true,
                 address: fields.email,
-                address_type: "Personal"
+                address_type: 'Personal'
             }],
             postal_addresses: [{
                 primary: true,
-                address_type: "Mailing",
+                address_type: 'Mailing',
                 address_lines: [
                     fields.mailing_street1
                 ],
-                region: fields.region,
-                country: fields.country,
-                locality: fields.locality,
-                postal_code: fields.postal_code
+                region: fields.mailing_region,
+                country: fields.mailing_country,
+                locality: fields.mailing_locality,
+                postal_code: fields.mailing_postal_code
             }]
-        }).then(() => {
-            resolve();
-        }).error(( error ) => {
-            reject( error );
         })
+
+        ref.once('value').then(() => {
+            resolve();
+        });
     })
 }

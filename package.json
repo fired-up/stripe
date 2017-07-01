@@ -7,6 +7,14 @@
   "author": "hello@patronage.org",
   "license": "GPL",
   "dependencies": {
+    "firebase-admin": "^5.0.0",
+    "lodash": "^4.17.4",
     "stripe": "^4.23.1"
+  },
+  "devDependencies": {
+    "body-parser": "^1.17.2",
+    "cors": "^2.8.3",
+    "dotenv": "^4.0.0",
+    "express": "^4.15.3"
   }
 }
