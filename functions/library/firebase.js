@@ -11,7 +11,8 @@ const DONORS_REF = 'donors';
 const DONATIONS_REF = 'donations';
 const PLATFORM_NAME = 'fired-up-donations';
 
-exports.getCustomer = ( email ) => {
+
+exports.getCustomer = ( fields ) => {
     return new Promise(( resolve, reject ) => {
         // This will be a lot faster on FireStore
         firebase.database().ref( DONORS_REF )
@@ -19,22 +20,34 @@ exports.getCustomer = ( email ) => {
                 const values = _.values( snapshot.val() );
 
                 const customer = _.find( values, ( customer ) => {
-                    const email = _.find( customer.email_addresses, ( email ) => {
-                        return email.address === email;
+                    const email_found = _.find( customer.email_addresses, ( email ) => {
+                        return email.address === fields.email;
                     });
 
-                    return !!email;
+                    // We only re-associate a donor with an existing customerID
+                    // if their details align near perfectly
+                    return (
+                        !!email_found &&
+                        fields.given_name.toLowerCase() === customer.given_name.toLowerCase() &&
+                        fields.family_name.toLowerCase() === customer.family_name.toLowerCase() &&
+                        fields.mailing_region.toLowerCase() === customer.postal_addresses[0].region.toLowerCase() &&
+                        fields.mailing_country.toLowerCase() === customer.postal_addresses[0].country.toLowerCase() &&
+                        fields.mailing_locality.toLowerCase() === customer.postal_addresses[0].locality.toLowerCase() &&
+                        fields.mailing_postal_code === customer.postal_addresses[0].postal_code
+                    );
                 });
 
                 resolve( customer || false );
+            }).catch(( error ) => {
+                reject( error );
             });
     });
 }
 
 exports.createCustomer = ( fields, customerID ) => {
     return new Promise(( resolve, reject ) => {
-        const key = firebase.database().ref(DONORS_REF).push().key;
-        const ref = firebase.database().ref( `${ DONORS_REF }/${ key }` );
+        const key = firebase.database().ref( DONORS_REF ).push().key;
+        const ref = firebase.database().ref( `${ DONORS_REF }/${ customerID }` );
 
         ref.set({
             employer: fields.employer,
@@ -71,55 +84,54 @@ exports.createCustomer = ( fields, customerID ) => {
 }
 
 exports.createDonation = ( fields ) => {
-    const key = firebase.database().ref(DONATIONS_REF).push().key;
-    const ref = firebase.database().ref( `${ DONATIONS_REF }/${ key }` );
+    return new Promise(( resolve, reject ) => {
+        const key = firebase.database().ref(DONATIONS_REF).push().key;
+        const ref = firebase.database().ref( `${ DONATIONS_REF }/${ key }` );
 
-    ref.set({
-        action_date: new Date(),
-        created_date: new Date(),
-        modified_date: new Date(),
+        ref.set({
+            action_date: new Date(),
+            created_date: new Date(),
+            modified_date: new Date(),
 
-        currency: 'USD'
-        amount: fields.amount,
-
-        voided: false,
-        voided_date: null,
-        credited_amount: 0,
-        credited_date: null,
-
-        url: fields.amount,
-        person: fields.donor,
-        subscription_instance: null,
-        origin_system: PLATFORM_NAME,
-
-        // TODO: should support multiple transactions, one line for each
-        identifiers: [
-            `stripe:${ fields.transaction }`
-        ],
-
-        // TODO: should support multiple recipients
-        recipients: [{
-            // legal_name:
+            currency: 'USD',
             amount: fields.amount,
-            display_name: fields.recipient
-        }],
 
-        // TODO: should support multiple transactions and statuses(success/failure)
-        payment: [{
-            method: 'Credit Card',
-            authorization_stored: true,
-            reference_number: fields.transaction
-        }],
+            voided: false,
+            voided_date: null,
+            credited_amount: 0,
+            credited_date: null,
 
-        referrer_data: {
-            //referrer: // person or group
-            url: fields.referrer,
-            source: fields.source,
-            website: fields.website
-        }
-    });
+            url: fields.url,
+            person: fields.donor,
+            subscription_instance: null,
+            origin_system: PLATFORM_NAME,
 
-    ref.once('value').then(() => {
-        resolve();
+            identifiers: [
+                `stripe:${ fields.transaction }`
+            ],
+
+            recipients: [{
+                // legal_name:
+                amount: fields.amount,
+                display_name: fields.recipient
+            }],
+
+            payment: [{
+                method: 'Credit Card',
+                authorization_stored: true,
+                reference_number: fields.transaction
+            }],
+
+            referrer_data: {
+                //referrer: // person or group
+                url: fields.referrer,
+                source: fields.source,
+                website: fields.website
+            }
+        });
+
+        ref.once('value').then(() => {
+            resolve();
+        });
     });
 }

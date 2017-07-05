@@ -20,10 +20,12 @@ app.use( cors() );
 app.use( bodyParser.json() );
 
 app.post('/donate', function( req, res ) {
-    console.log( req.body );
-
     stripe.single( req.body ).then(() => {
         res.status(200);
+    }).catch(( error ) => {
+        console.error(error);
+
+        res.status(200)
     })
 });
 

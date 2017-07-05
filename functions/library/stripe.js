@@ -1,12 +1,13 @@
 // Private
-//getCustomer - get customer from stripe
-//updateCustomer - update customer on stripe
-//verifyPlan - find or create or force update plan
+// getCustomer - get customer from stripe
+// updateCustomer - update customer on stripe
+// verifyPlan - find or create or force update plan
 
 
 // Public
 // recurring
 
+const _ = require('lodash');
 const stripe = require('stripe')( process.env.STRIPE_PRIVATE );
 const firebase = require('./firebase.js');
 
@@ -35,16 +36,34 @@ function createCustomer( fields ) {
                 }
             }
         }, ( error, customer ) => {
-            firebase.createCustomer( fields, customer.id ).then(() => {
-                resolve( customer.id )
-            })
+            if ( !error ) {
+                firebase.createCustomer( fields, customer.id ).then(() => {
+                    resolve( customer.id );
+                });
+            } else {
+                reject( error );
+            }
         })
     })
 }
 
+function updateCustomer( fields, customerID ) {
+    return new Promise(( resolve, reject ) => {
+        stripe.customers.update( customerID, {
+            source: fields.token
+        }, ( error, customer ) => {
+            if ( !error ) {
+                resolve( customerID );
+            } else {
+                reject( error );
+            }
+        });
+    });
+}
+
 function findOrCreateCustomer( fields ) {
     return new Promise(( resolve, reject ) => {
-        firebase.getCustomer( fields.email ).then(( customer ) => {
+        firebase.getCustomer( fields ).then(( customer ) => {
             if ( customer ) {
                 let customerID = _.find( customer.identifiers, ( id ) => {
                     return id.indexOf('stripe:') !== -1;
@@ -53,7 +72,10 @@ function findOrCreateCustomer( fields ) {
                 if ( customerID ) {
                     customerID = customerID.replace('stripe:', '');
 
-                    resolve( customerID );
+                    // Uses existing donor info but updates card number
+                    updateCustomer( fields, customerID ).then(() => {
+                        resolve( customerID );
+                    });
                 } else {
                     reject('CustomerID did not contain a Stripe Customer ID. Auto-creation of Stripe Customer is currently unsupported for existing donor objects');
                 }
@@ -62,6 +84,8 @@ function findOrCreateCustomer( fields ) {
                     resolve( customerID );
                 });
             }
+        }).catch(( error ) => {
+            reject( error );
         })
     })
 };
@@ -79,12 +103,24 @@ exports.single = ( fields ) => {
                 // destination
             }, ( error, charge ) => {
                 if ( !error && charge ) {
-                    resolve( charge.id );
+                    firebase.createDonation({
+                        url: fields.url,
+                        amount: fields.amount,
+                        donor: customerID,
+                        source: fields.source,
+                        website: fields.website,
+                        referrer: fields.referrer,
+                        recipient: fields.recipient,
+                        transaction: charge.id
+                    }).then(() => {
+                        resolve( charge.id );
+                    });
                 } else {
-                    console.log(error);
                     reject( error );
                 }
             });
+        }).catch(( error ) => {
+            reject( error );
         });
     });
 }
