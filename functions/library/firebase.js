@@ -5,7 +5,11 @@
 const _ = require('lodash');
 const firebase = require('firebase-admin');
 
+
+// TODO: Make these configurable;
 const DONORS_REF = 'donors';
+const DONATIONS_REF = 'donations';
+const PLATFORM_NAME = 'fired-up-donations';
 
 exports.getCustomer = ( email ) => {
     return new Promise(( resolve, reject ) => {
@@ -64,4 +68,58 @@ exports.createCustomer = ( fields, customerID ) => {
             resolve();
         });
     })
+}
+
+exports.createDonation = ( fields ) => {
+    const key = firebase.database().ref(DONATIONS_REF).push().key;
+    const ref = firebase.database().ref( `${ DONATIONS_REF }/${ key }` );
+
+    ref.set({
+        action_date: new Date(),
+        created_date: new Date(),
+        modified_date: new Date(),
+
+        currency: 'USD'
+        amount: fields.amount,
+
+        voided: false,
+        voided_date: null,
+        credited_amount: 0,
+        credited_date: null,
+
+        url: fields.amount,
+        person: fields.donor,
+        subscription_instance: null,
+        origin_system: PLATFORM_NAME,
+
+        // TODO: should support multiple transactions, one line for each
+        identifiers: [
+            `stripe:${ fields.transaction }`
+        ],
+
+        // TODO: should support multiple recipients
+        recipients: [{
+            // legal_name:
+            amount: fields.amount,
+            display_name: fields.recipient
+        }],
+
+        // TODO: should support multiple transactions and statuses(success/failure)
+        payment: [{
+            method: 'Credit Card',
+            authorization_stored: true,
+            reference_number: fields.transaction
+        }],
+
+        referrer_data: {
+            //referrer: // person or group
+            url: fields.referrer,
+            source: fields.source,
+            website: fields.website
+        }
+    });
+
+    ref.once('value').then(() => {
+        resolve();
+    });
 }
