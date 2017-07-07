@@ -13,6 +13,16 @@ const SUBSCRIPTIONS_REF = 'subscriptions';
 const PLATFORM_NAME = 'fired-up-donations';
 
 
+function getSubscription( subscriptionID ) {
+    return new Promise(( resolve, reject ) => {
+        const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ subscriptionID }` );
+
+        ref.once('value').then(( snapshot ) => {
+            resolve( snapshot.val() );
+        });
+    });
+}
+
 exports.getCustomer = ( fields ) => {
     return new Promise(( resolve, reject ) => {
         // This will be a lot faster on FireStore
@@ -83,16 +93,6 @@ exports.createCustomer = ( fields, customerID ) => {
     })
 }
 
-exports.getSubscription = function( subscriptionID ) {
-    return new Promise(( resolve, reject ) => {
-        const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ subscriptionID }` );
-
-        ref.once('value').then(( snapshot ) => {
-            resolve( snapshot.val() );
-        });
-    });
-}
-
 // Same as donation, minus one-time fields
 exports.createSubscription = function( fields ) {
     return new Promise(( resolve, reject ) => {
@@ -109,7 +109,7 @@ exports.createSubscription = function( fields ) {
             voided: false,
             voided_date: null,
 
-            url: fields.url,
+            url: fields.url || '',
             person: fields.donor,
             origin_system: PLATFORM_NAME,
 
@@ -120,7 +120,7 @@ exports.createSubscription = function( fields ) {
             recipients: [{
                 // legal_name:
                 amount: fields.amount,
-                display_name: fields.recipient
+                display_name: fields.recipient || ''
             }],
 
             payment: [{
@@ -131,9 +131,9 @@ exports.createSubscription = function( fields ) {
 
             referrer_data: {
                 //referrer: // person or group
-                url: fields.referrer,
-                source: fields.source,
-                website: fields.website
+                url: fields.referrer || '',
+                source: fields.source || '',
+                website: fields.website || ''
             }
         };
 
@@ -162,7 +162,7 @@ exports.createDonation = ( fields, subscriptionID ) => {
             credited_amount: 0,
             credited_date: null,
 
-            url: fields.url,
+            url: fields.url || '',
             person: fields.donor,
             subscription_instance: null,
             origin_system: PLATFORM_NAME,
@@ -174,7 +174,7 @@ exports.createDonation = ( fields, subscriptionID ) => {
             recipients: [{
                 // legal_name:
                 amount: fields.amount,
-                display_name: fields.recipient
+                display_name: fields.recipient || ''
             }],
 
             payment: [{
@@ -185,9 +185,9 @@ exports.createDonation = ( fields, subscriptionID ) => {
 
             referrer_data: {
                 //referrer: // person or group
-                url: fields.referrer,
-                source: fields.source,
-                website: fields.website
+                url: fields.referrer || '',
+                source: fields.source || '',
+                website: fields.website || ''
             }
         };
 
@@ -196,10 +196,10 @@ exports.createDonation = ( fields, subscriptionID ) => {
             getSubscription( subscriptionID ).then(( subscription ) => {
                 formatted.url = subscription.url;
                 formatted.subscription_instance = '';
-                formatted.recipients[0].display_name = subscription.recipients[0].display_name;
-                formatted.referrer_data.url = subscription.referrer_data.url;
-                formatted.referrer_data.source = subscription.referrer_data.source;
-                formatted.referrer_data.website = subscription.referrer_data.website;
+                formatted.recipients[0].display_name = subscription.recipients[0].display_name || '';
+                formatted.referrer_data.url = subscription.referrer_data.url || '';
+                formatted.referrer_data.source = subscription.referrer_data.source || '';
+                formatted.referrer_data.website = subscription.referrer_data.website || '';
 
                 ref.set( formatted );
 

@@ -126,16 +126,17 @@ function verifyPlan() {
                 if ( plan.amount !== 100 || plan.interval !== 'month' || plan.currency !== 'usd' ) {
                     stripe.plans.update('one', params, ( error, plan ) => {
                         if ( error ) {
+                            console.log(error);
                             reject( error );
                         } else {
-                            resolve( true );
+                            resolve();
                         }
                     });
 
                     // TODO: This needs to notify the app admin better
                     console.error('¡Critical! Somebody is adjusting plan amounts in the Stripe.js dashboard which risks significantly overcharging donors cards. Please ensure no Stripe users are adjusting "Plan" parameters!')
                 } else {
-                    callback( false );
+                    resolve();
                 }
             }
         });
@@ -183,12 +184,20 @@ exports.single = ( fields ) => {
 
 exports.recurring = ( fields ) => {
     return new Promise(( resolve, reject ) => {
+        let customerID;
+
         verifyPlan()
-            .then(findOrCreateCustomer( fields ))
-            .then(( customerID ) => {
+            .then(() => {
+                // TODO: Why doesn't `.then(findOrCreateCustomer())` not return in next param?
+                return findOrCreateCustomer( fields )
+                    .then(( id ) => {
+                        customerID = id
+                    })
+            })
+            .then(() => {
                 stripe.customers.createSubscription(customerID, {
                     plan: 'one',
-                    quantity: Math.floor( donation.amount / 100 )
+                    quantity: Math.floor( fields.amount )
                 }, ( error, subscription ) => {
                     if ( !error && subscription ) {
                         firebase.createSubscription({
@@ -207,6 +216,6 @@ exports.recurring = ( fields ) => {
                         reject( error );
                     }
                 });
-            });        
+            });
     });
 }
