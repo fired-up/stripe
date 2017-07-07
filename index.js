@@ -19,7 +19,7 @@ const app = express();
 app.use( cors() );
 app.use( bodyParser.json() );
 
-app.post('/donate', function( req, res ) {
+app.post('/donate/one', ( req, res ) => {
     stripe.single( req.body ).then(( chargeID ) => {
         res.status(200).send({ status: 'success', chargeID });
     }).catch(( error ) => {
@@ -27,6 +27,17 @@ app.post('/donate', function( req, res ) {
     })
 });
 
-app.listen(4000, function() {
+app.post('/donate/recurring', ( req, res ) => {
+    stripe.recurring( req.body ).then(( subscriptionID ) => {
+        res.status(200).send({ status: 'success', subscriptionID });
+    }).catch(( error ) => {
+        res.status(200).send({ status: 'error', message: error })
+    })
+});
+
+//app.post('/stripe/webhook', webhook.dispatc);
+
+
+app.listen(4000, () => {
     console.log('Example app listening on port 4000!')
 });

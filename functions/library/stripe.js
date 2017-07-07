@@ -11,6 +11,11 @@ const _ = require('lodash');
 const stripe = require('stripe')( process.env.STRIPE_PRIVATE );
 const firebase = require('./firebase.js');
 
+
+// TODO Make these configurable
+const STATEMENT_DESCRIPTOR = 'Fired Up Stripe'
+
+
 function createCustomer( fields ) {
     return new Promise(( resolve, reject ) => {
         // Metadata storage is nice for an redundent data layer for FEC rules
@@ -90,6 +95,54 @@ function findOrCreateCustomer( fields ) {
     })
 };
 
+// Verify the presense of a plan called 'one' with a value of $1.
+// It's possible for somebody to change this in Stripe's dashboard
+// so this consistantly enforces it
+function verifyPlan() {
+    return new Promise(( resolve, reject ) => {
+        var params = {
+            name: 'One Dollar',
+            amount: 100,
+            currency: 'usd',
+            interval: 'month',
+            statement_descriptor: STATEMENT_DESCRIPTOR
+        };
+
+        stripe.plans.retrieve('one', ( error, plan ) => {
+            if ( error ) {
+                // THROW Plan was deleted!
+
+                params.id = 'one';
+
+                stripe.plans.create(params, ( error, plan ) => {
+                    if ( error ) {
+                        reject( error );
+                    } else {
+                        resolve();
+                    }
+                });
+
+            } else {
+                if ( plan.amount !== 100 || plan.interval !== 'month' || plan.currency !== 'usd' ) {
+                    stripe.plans.update('one', params, ( error, plan ) => {
+                        if ( error ) {
+                            reject( error );
+                        } else {
+                            resolve( true );
+                        }
+                    });
+
+                    // TODO: This needs to notify the app admin better
+                    console.error('¡Critical! Somebody is adjusting plan amounts in the Stripe.js dashboard which risks significantly overcharging donors cards. Please ensure no Stripe users are adjusting "Plan" parameters!')
+                } else {
+                    callback( false );
+                }
+            }
+        });
+    });
+};
+
+
 exports.single = ( fields ) => {
     return new Promise(( resolve, reject ) => {
         // TODO: This will use customers saved card. We want to connect
@@ -97,9 +150,12 @@ exports.single = ( fields ) => {
         findOrCreateCustomer( fields ).then(( customerID ) => {
             stripe.charges.create({
                 amount: fields.amount * 100, // Amount is in cents
-                currency: "usd",
+                currency: 'usd',
                 customer: customerID,
-                description: "Donation to #####"
+                description: 'Donation to #####',
+                //metadata: {
+                //    ip:
+                //}
                 // destination
             }, ( error, charge ) => {
                 if ( !error && charge ) {
@@ -121,6 +177,31 @@ exports.single = ( fields ) => {
             });
         }).catch(( error ) => {
             reject( error );
+        });
+    });
+}
+
+exports.recurring = ( fields ) => {
+    return new Promise(( resolve, reject ) => {
+        verifyPlan()
+            .then(findOrCreateCustomer( fields ))
+            .then(( customerID ) => {
+                stripe.customers.createSubscription(customerID, {
+                    plan: "one",
+                    quantity: Math.floor( donation.amount / 100 )
+                }, ( error, subscription ) => {
+                    if ( error ) {
+                        reject( error );
+                    } else {
+                        resolve( subscription.id );
+                    }
+
+                    //
+                    // Async Actions
+                    //
+                    //recurring.create( subscription.id, donation, () => {});
+                });
+            });
         });
     });
 }
