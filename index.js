@@ -14,7 +14,7 @@ admin.initializeApp({
         projectId: process.env.FIREBASE_ID,
         privateKey: process.env.FIREBASE_KEY,
         clientEmail: process.env.FIREBASE_EMAIL
-    })    
+    })
 });
 
 const app = express();

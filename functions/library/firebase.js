@@ -195,7 +195,7 @@ exports.createDonation = ( fields, subscriptionID ) => {
             // Copy the referring fields from the subscription so donations remain properly attributed
             getSubscription( subscriptionID ).then(( subscription ) => {
                 formatted.url = subscription.url;
-                formatted.subscription_instance = '';
+                formatted.subscription_instance = ''; // TODO
                 formatted.recipients[0].display_name = subscription.recipients[0].display_name || '';
                 formatted.referrer_data.url = subscription.referrer_data.url || '';
                 formatted.referrer_data.source = subscription.referrer_data.source || '';

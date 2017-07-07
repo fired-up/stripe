@@ -20,7 +20,7 @@ This library allows you to process donations with stripe. While baseline functio
 ## Library Usage
 
 1) `yarn add fired-up-stripe`
-2) 
+2)
 
 ## Functions Usage
 
@@ -29,7 +29,26 @@ This library allows you to process donations with stripe. While baseline functio
 3) Use `yourapphere.firebase.io/fup-stripe-donate` as the donation endpoint. Pass data like this:
 
 ```
-    example donation data from fired
+{
+    "amount":"25",
+    "email":"test@test.com",
+    "given_name":"Test",
+    "family_name":"User",
+    "mailing_street1":"Street Address 1",
+    "mailing_locality":"Anytown",
+    "mailing_postal_code":"00000",
+    "mailing_region":"CA",
+    "mailing_country":"US",
+    "employer":"Test",
+    "occupation":"Test",
+    "use_mailing":true,
+    "token":"tok_xxxxxxxxxxxxx",
+    "url":"http://localhost/your-donate-page",
+    "source":"refering_person_name",
+    "website":"localhost:3000",
+    "referrer":"http://localhost:3000/your-donate-page",
+    "recipient":"Your Org Name Here"
+}
 ```
 
 ## Development
