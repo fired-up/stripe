@@ -6,7 +6,7 @@ This library allows you to process donations with stripe. While baseline functio
 * Create one time donations
 * Create recurring donations
 * Writes Donor, Donation, and Subscription data in OSDI format
-* Writes data to Stripe
+* Writes data to Firebase Database
 
 ## Why Fired Up Donate/Stripe instead of another Stripe processor?
 
