@@ -5,14 +5,16 @@ const admin = require('firebase-admin');
 const bodyParser = require('body-parser');
 
 const stripe = require('./functions/library/stripe.js');
+const webhook = require('./functions/library/webhook.js');
 
 admin.initializeApp({
+    databaseURL: process.env.FIREBASE_DATABASE,
+
     credential: admin.credential.cert({
         projectId: process.env.FIREBASE_ID,
         privateKey: process.env.FIREBASE_KEY,
         clientEmail: process.env.FIREBASE_EMAIL
-    }),
-    databaseURL: process.env.FIREBASE_DATABASE
+    })    
 });
 
 const app = express();
@@ -35,7 +37,7 @@ app.post('/donate/recurring', ( req, res ) => {
     })
 });
 
-//app.post('/stripe/webhook', webhook.dispatc);
+app.post('/stripe/webhook', webhook.dispatch);
 
 
 app.listen(4000, () => {

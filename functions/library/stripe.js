@@ -190,13 +190,23 @@ exports.recurring = ( fields ) => {
                     plan: 'one',
                     quantity: Math.floor( donation.amount / 100 )
                 }, ( error, subscription ) => {
-                    if ( error ) {
-                        reject( error );
+                    if ( !error && subscription ) {
+                        firebase.createSubscription({
+                            url: fields.url,
+                            amount: fields.amount,
+                            donor: customerID,
+                            source: fields.source,
+                            website: fields.website,
+                            referrer: fields.referrer,
+                            recipient: fields.recipient,
+                            subscription: subscription.id
+                        }).then(() => {
+                            resolve( subscription.id );
+                        })
                     } else {
-                        resolve( subscription.id );
-                    }                
+                        reject( error );
+                    }
                 });
-            });
-        });
+            });        
     });
 }

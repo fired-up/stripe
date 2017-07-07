@@ -86,13 +86,17 @@ exports.createCustomer = ( fields, customerID ) => {
 exports.getSubscription = function( subscriptionID ) {
     return new Promise(( resolve, reject ) => {
         const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ subscriptionID }` );
+
+        ref.once('value').then(( snapshot ) => {
+            resolve( snapshot.val() );
+        });
     });
 }
 
 // Same as donation, minus one-time fields
-exports.createSubscription = function( fields, subscriptionID ) {
+exports.createSubscription = function( fields ) {
     return new Promise(( resolve, reject ) => {
-        const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ subscriptionID }` );
+        const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ fields.subscription }` );
 
         let formatted = {
             action_date: new Date(),
