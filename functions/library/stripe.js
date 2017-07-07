@@ -187,19 +187,14 @@ exports.recurring = ( fields ) => {
             .then(findOrCreateCustomer( fields ))
             .then(( customerID ) => {
                 stripe.customers.createSubscription(customerID, {
-                    plan: "one",
+                    plan: 'one',
                     quantity: Math.floor( donation.amount / 100 )
                 }, ( error, subscription ) => {
                     if ( error ) {
                         reject( error );
                     } else {
                         resolve( subscription.id );
-                    }
-
-                    //
-                    // Async Actions
-                    //
-                    //recurring.create( subscription.id, donation, () => {});
+                    }                
                 });
             });
         });

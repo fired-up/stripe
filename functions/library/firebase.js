@@ -9,6 +9,7 @@ const firebase = require('firebase-admin');
 // TODO: Make these configurable;
 const DONORS_REF = 'donors';
 const DONATIONS_REF = 'donations';
+const SUBSCRIPTIONS_REF = 'subscriptions';
 const PLATFORM_NAME = 'fired-up-donations';
 
 
@@ -46,7 +47,6 @@ exports.getCustomer = ( fields ) => {
 
 exports.createCustomer = ( fields, customerID ) => {
     return new Promise(( resolve, reject ) => {
-        const key = firebase.database().ref( DONORS_REF ).push().key;
         const ref = firebase.database().ref( `${ DONORS_REF }/${ customerID }` );
 
         ref.set({
@@ -83,12 +83,69 @@ exports.createCustomer = ( fields, customerID ) => {
     })
 }
 
-exports.createDonation = ( fields ) => {
+exports.getSubscription = function( subscriptionID ) {
     return new Promise(( resolve, reject ) => {
-        const key = firebase.database().ref(DONATIONS_REF).push().key;
-        const ref = firebase.database().ref( `${ DONATIONS_REF }/${ key }` );
+        const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ subscriptionID }` );
+    });
+}
 
-        ref.set({
+// Same as donation, minus one-time fields
+exports.createSubscription = function( fields, subscriptionID ) {
+    return new Promise(( resolve, reject ) => {
+        const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ subscriptionID }` );
+
+        let formatted = {
+            action_date: new Date(),
+            created_date: new Date(),
+            modified_date: new Date(),
+
+            currency: 'USD',
+            amount: fields.amount,
+
+            voided: false,
+            voided_date: null,
+
+            url: fields.url,
+            person: fields.donor,
+            origin_system: PLATFORM_NAME,
+
+            identifiers: [
+                `stripe:${ fields.subscription }`
+            ],
+
+            recipients: [{
+                // legal_name:
+                amount: fields.amount,
+                display_name: fields.recipient
+            }],
+
+            payment: [{
+                method: 'Credit Card',
+                authorization_stored: true,
+                reference_number: fields.subscription
+            }],
+
+            referrer_data: {
+                //referrer: // person or group
+                url: fields.referrer,
+                source: fields.source,
+                website: fields.website
+            }
+        };
+
+        ref.set( formatted );
+
+        ref.once('value').then(() => {
+            resolve();
+        });
+    });
+}
+
+exports.createDonation = ( fields, subscriptionID ) => {
+    return new Promise(( resolve, reject ) => {
+        const ref = firebase.database().ref( `${ DONATIONS_REF }/${ fields.transaction }` );
+
+        let formatted = {
             action_date: new Date(),
             created_date: new Date(),
             modified_date: new Date(),
@@ -128,10 +185,30 @@ exports.createDonation = ( fields ) => {
                 source: fields.source,
                 website: fields.website
             }
-        });
+        };
 
-        ref.once('value').then(() => {
-            resolve();
-        });
+        if ( subscriptionID ) {
+            // Copy the referring fields from the subscription so donations remain properly attributed
+            getSubscription( subscriptionID ).then(( subscription ) => {
+                formatted.url = subscription.url;
+                formatted.subscription_instance = '';
+                formatted.recipients[0].display_name = subscription.recipients[0].display_name;
+                formatted.referrer_data.url = subscription.referrer_data.url;
+                formatted.referrer_data.source = subscription.referrer_data.source;
+                formatted.referrer_data.website = subscription.referrer_data.website;
+
+                ref.set( formatted );
+
+                ref.once('value').then(() => {
+                    resolve();
+                });
+            });
+        } else {
+            ref.set( formatted );
+
+            ref.once('value').then(() => {
+                resolve();
+            });
+        }
     });
 }
