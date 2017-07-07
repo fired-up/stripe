@@ -15,6 +15,7 @@ This library allows you to process donations with stripe. While baseline functio
 * Uses the Open Supporter Data Interface so data is portable
 * _TODO: Process changes made in the Stripe UI. Including refunds, cancelling subscriptions, and reverting plan changes to prevent unexpected changes to uses subscriptions_
 * _TODO: Works with Fired Up Donate Form out of the box_
+* Verbose in communicating donor/donation transaction data to Stripe, so Stripe data can be exported or a Stripe analytics provider can provide value
 
 ## Library Usage
 
