@@ -231,7 +231,7 @@ exports.recurring = ( fields ) => {
 }
 
 exports.startConnect = ( req, res ) => {
-    firebase.createConnection().then( ( key ) => {
+    firebase.createConnection( req.query.name ).then( ( key ) => {
         res.redirect('https://connect.stripe.com/oauth/authorize?' + qs.stringify({
             state: key,
             scope: 'read_write',

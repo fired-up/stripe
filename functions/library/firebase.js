@@ -219,14 +219,15 @@ exports.createDonation = ( fields, subscriptionID ) => {
     });
 }
 
-exports.createConnection = () => {
+exports.createConnection = ( name ) => {
     return new Promise(( resolve, reject ) => {
         const key = firebase.database().ref( CONNECTIONS_REF ).push().key;
         const ref = firebase.database().ref( `${ CONNECTIONS_REF }/${ key }` );
 
         ref.set({
             stripeID: null,
-            status: 'pending'
+            status: 'pending',
+            name: name || null
         });
 
         ref.once('value').then(() => {
@@ -238,7 +239,7 @@ exports.createConnection = () => {
 function getConnection( key ) {
     return new Promise(( resolve, reject ) => {
         const ref = firebase.database().ref( `${ CONNECTIONS_REF }/${ key }` );
-        
+
         ref.once('value').then(( snapshot ) => {
             if ( snapshot.val() ) {
                 resolve( snapshot.val() );
