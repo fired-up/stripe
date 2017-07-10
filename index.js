@@ -39,6 +39,16 @@ app.post('/donate/recurring', ( req, res ) => {
 
 app.post('/stripe/webhook', webhook.dispatch);
 
+app.post('/stripe/connect/start', stripe.startConnect);
+
+app.post('/stripe/connect/complete', ( req, res ) => {
+    stripe.finishConnect().then(() => {
+        res.status(200).send({ status: 'success' });
+    }).catch(( error ) => {
+        res.status(200).send({ status: 'error', message: error })
+    });
+});
+
 
 app.listen(4000, () => {
     console.log('Example app listening on port 4000!')

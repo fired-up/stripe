@@ -8,11 +8,13 @@
 // recurring
 
 const _ = require('lodash');
+const qs = require('querystring');
 const stripe = require('stripe')( process.env.STRIPE_PRIVATE );
 const firebase = require('./firebase.js');
 
 
 // TODO Make these configurable
+const PLATFORM_NAME = 'fired-up-donations';
 const STATEMENT_DESCRIPTOR = 'Fired Up Stripe'
 const ALLOW_CONNECT_DESTINATION = true; // TODO: this should be disabled in library and enabled with config.
 
@@ -220,5 +222,42 @@ exports.recurring = ( fields ) => {
                     }
                 });
             });
+    });
+}
+
+exports.startConnect = ( req, res ) => {
+    firebase.createConnection().then( ( key ) => {
+        res.redirect('https://connect.stripe.com/oauth/authorize?' + qs.stringify({
+            state: { key },
+            scope: 'read_write',
+            response_type: 'code',
+            client_id: process.env.STRIPE_CLIENT
+        }));
+    });
+}
+
+exports.finishConnect = ( code, state ) => {
+    return new Promise(( resolve, reject ) => {
+        firebase.getConnection( state.key ).then(() => {
+            request.post({
+                json: true,
+                url: 'https://connect.stripe.com/oauth/token',
+                form: {
+                    code: code,
+                    grant_type: 'authorization_code',
+                    client_id: process.env.STRIPE_CLIENT,
+                    client_secret: process.env.STRIPE_PRIVATE
+                }
+            }, ( error, response, body ) => {
+                const stripeID = body.access_token;
+
+                firebase.completeConnection( state.key, stripeID ).then(() => {
+                    resolve();
+                });
+            });
+        }).catch(() => {
+            // If connection wasn't previously authorized, reject request
+            reject();
+        });
     });
 }

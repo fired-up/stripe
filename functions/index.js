@@ -1,9 +1,9 @@
 const admin = require('firebase-admin');
+const functions = require('firebase-functions');
 const cors = require('cors')({ origin: true });
 
 const stripe = require('./library/stripe.js');
 const webhook = require('./library/webhook.js');
-
 
 admin.initializeApp( functions.config().firebase );
 
@@ -24,6 +24,22 @@ exports.FUPDonateMonthly = functions.https.onRequest( ( req, res ) => {
         }).catch(( error ) => {
             res.status(200).send({ status: 'error', message: error })
         })
+    });
+});
+
+exports.FUPStripeConnectStart = functions.https.onRequest( ( req, res ) => {
+    cors(req, res, () => {
+        stripe.startConnect( req, res );
+    });
+});
+
+exports.FUPStripeConnectComplete = functions.https.onRequest( ( req, res ) => {
+    cors(req, res, () => {
+        stripe.finishConnect().then(() => {
+            res.status(200).send({ status: 'success' });
+        }).catch(( error ) => {
+            res.status(200).send({ status: 'error', message: error })
+        });
     });
 });
 

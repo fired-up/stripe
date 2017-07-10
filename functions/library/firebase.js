@@ -10,6 +10,8 @@ const firebase = require('firebase-admin');
 const DONORS_REF = 'donors';
 const DONATIONS_REF = 'donations';
 const SUBSCRIPTIONS_REF = 'subscriptions';
+const CONNECTIONS_REF = 'stripe-connections';
+
 const PLATFORM_NAME = 'fired-up-donations';
 
 
@@ -216,3 +218,50 @@ exports.createDonation = ( fields, subscriptionID ) => {
         }
     });
 }
+
+exports.createConnection = () => {
+    return new Promise(( resolve, reject ) => {
+        const key = firebase.database().ref( CONNECTIONS_REF ).push().key;
+        const ref = firebase.database().ref( `${ CONNECTIONS_REF }/${ key }` );
+
+        ref.set({
+            stripeID: null,
+            status: 'pending'
+        });
+
+        ref.once('value').then(() => {
+            resolve( key );
+        });
+    });
+};
+
+function getConnection() {
+    return new Promise(( resolve, reject ) => {
+        const ref = firebase.database().ref( `${ CONNECTIONS_REF }/${ key }` );
+
+        ref.once('value').then(( snapshot ) => {
+            if ( snapshot.val() ) {
+                resolve( snapshot.val() );
+            } else {
+                reject();
+            }
+        });
+    });
+};
+
+exports.completeConnection = ( key, stripeID ) => {
+    return new Promise(( resolve, reject ) => {
+        const ref = firebase.database().ref( `${ CONNECTIONS_REF }/${ key }` );
+
+        ref.update({
+            stripeID,
+            status: 'completed'
+        });
+
+        ref.once('value').then(() => {
+            resolve();
+        });
+    });
+}
+
+exports.getConnection = getConnection;
