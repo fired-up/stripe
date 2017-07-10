@@ -9,9 +9,14 @@
 
 const _ = require('lodash');
 const qs = require('querystring');
-const stripe = require('stripe')( process.env.STRIPE_PRIVATE );
+const request = require('request');
 const firebase = require('./firebase.js');
+const functions = require('firebase-functions');
 
+const STRIPE_PRIVATE = typeof functions.config().stripe !== 'undefined' ? functions.config().stripe.private : process.env.STRIPE_PRIVATE;
+const STRIPE_CLIENT = typeof functions.config().stripe !== 'undefined' ? functions.config().stripe.platform : process.env.STRIPE_CLIENT;
+
+const stripe = require('stripe')( STRIPE_PRIVATE );
 
 // TODO Make these configurable
 const PLATFORM_NAME = 'fired-up-donations';
@@ -228,36 +233,41 @@ exports.recurring = ( fields ) => {
 exports.startConnect = ( req, res ) => {
     firebase.createConnection().then( ( key ) => {
         res.redirect('https://connect.stripe.com/oauth/authorize?' + qs.stringify({
-            state: { key },
+            state: key,
             scope: 'read_write',
             response_type: 'code',
-            client_id: process.env.STRIPE_CLIENT
+            client_id: STRIPE_CLIENT
         }));
     });
 }
 
 exports.finishConnect = ( code, state ) => {
     return new Promise(( resolve, reject ) => {
-        firebase.getConnection( state.key ).then(() => {
+        firebase.getConnection( state ).then(() => {
             request.post({
                 json: true,
                 url: 'https://connect.stripe.com/oauth/token',
                 form: {
                     code: code,
                     grant_type: 'authorization_code',
-                    client_id: process.env.STRIPE_CLIENT,
-                    client_secret: process.env.STRIPE_PRIVATE
+                    client_id: STRIPE_CLIENT,
+                    client_secret: STRIPE_PRIVATE
                 }
             }, ( error, response, body ) => {
-                const stripeID = body.access_token;
+                if ( !error && !body.error ) {
+                    const stripeID = body.access_token;
 
-                firebase.completeConnection( state.key, stripeID ).then(() => {
-                    resolve();
-                });
+                    firebase.completeConnection( state, stripeID ).then(() => {
+                        resolve();
+                    });
+                } else {
+                    reject( typeof body.error !== 'undefined' ? body.error : error );
+                }
             });
-        }).catch(() => {
+        }).catch(( error ) => {
             // If connection wasn't previously authorized, reject request
-            reject();
+            console.log('Couldn\'t Finish')
+            reject( error );
         });
     });
 }

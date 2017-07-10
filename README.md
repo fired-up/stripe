@@ -25,8 +25,11 @@ This library allows you to process donations with stripe. While baseline functio
 ## Functions Usage
 
 1) `git clone`
-2) `firebase deploy`
-3) Use `yourapphere.firebase.io/fup-stripe-donate` as the donation endpoint. Pass data like this:
+2) `yarn && cd functions && yarn && cd ..`
+3) `firebase init` (Take care to not overwrite anything)
+4) `firebase functions:config:set stripe.private="%STRIPE_PRIVATE" stripe.connect="%STRIPE_CLIENT%"` (Connect is optional, only use if you're connecting accounts)
+5) Send the following JSON to your new donation processing route `https://us-central1-%yourappname%.cloudfunctions.net/FUPDonateOnce`
+
 
 ```
 {

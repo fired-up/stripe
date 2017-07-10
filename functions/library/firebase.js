@@ -235,15 +235,15 @@ exports.createConnection = () => {
     });
 };
 
-function getConnection() {
+function getConnection( key ) {
     return new Promise(( resolve, reject ) => {
         const ref = firebase.database().ref( `${ CONNECTIONS_REF }/${ key }` );
-
+        
         ref.once('value').then(( snapshot ) => {
             if ( snapshot.val() ) {
                 resolve( snapshot.val() );
             } else {
-                reject();
+                reject('No Value');
             }
         });
     });

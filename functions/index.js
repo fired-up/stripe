@@ -35,9 +35,10 @@ exports.FUPStripeConnectStart = functions.https.onRequest( ( req, res ) => {
 
 exports.FUPStripeConnectComplete = functions.https.onRequest( ( req, res ) => {
     cors(req, res, () => {
-        stripe.finishConnect().then(() => {
+        stripe.finishConnect(req.query.code, req.query.state).then(() => {
             res.status(200).send({ status: 'success' });
         }).catch(( error ) => {
+            console.log( error );
             res.status(200).send({ status: 'error', message: error })
         });
     });
