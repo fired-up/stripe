@@ -14,6 +14,7 @@ const firebase = require('./firebase.js');
 
 // TODO Make these configurable
 const STATEMENT_DESCRIPTOR = 'Fired Up Stripe'
+const ALLOW_CONNECT_DESTINATION = true; // TODO: this should be disabled in library and enabled with config.
 
 
 function createCustomer( fields ) {
@@ -149,16 +150,18 @@ exports.single = ( fields ) => {
         // TODO: This will use customers saved card. We want to connect
         // transactions to customer without saving their card for default
         findOrCreateCustomer( fields ).then(( customerID ) => {
-            stripe.charges.create({
+            let charge = {
                 amount: fields.amount * 100, // Amount is in cents
                 currency: 'usd',
                 customer: customerID,
-                description: 'Donation to #####',
-                //metadata: {
-                //    ip:
-                //}
-                // destination
-            }, ( error, charge ) => {
+                description: `Donation to ${ fields.recipient }`
+            };
+
+            if ( fields.destination && ALLOW_CONNECT_DESTINATION ) {
+                charge.destination = { account: fields.destination };
+            }
+
+            stripe.charges.create(charge, ( error, charge ) => {
                 if ( !error && charge ) {
                     firebase.createDonation({
                         url: fields.url,
