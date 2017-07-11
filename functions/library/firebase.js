@@ -6,9 +6,6 @@ const _ = require('lodash');
 const firebase = require('firebase-admin');
 const functions = require('firebase-functions');
 
-firebase.initializeApp( functions.config().firebase );
-
-
 // TODO: Make these configurable;
 const DONORS_REF = 'donors';
 const DONATIONS_REF = 'donations';
