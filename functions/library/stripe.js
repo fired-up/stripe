@@ -14,7 +14,7 @@ const firebase = require('./firebase.js');
 const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 
-admin.initializeApp( functions.config().firebase, 'fired-up-donations/stripe' );
+admin.initializeApp( functions.config().firebase );
 
 
 const STRIPE_PRIVATE = typeof functions.config().stripe !== 'undefined' ? functions.config().stripe.private : process.env.STRIPE_PRIVATE;
