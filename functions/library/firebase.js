@@ -4,6 +4,9 @@
 
 const _ = require('lodash');
 const firebase = require('firebase-admin');
+const functions = require('firebase-functions');
+
+firebase.initializeApp( functions.config().firebase, 'fired-up-donations/firebase' );
 
 
 // TODO: Make these configurable;
@@ -11,7 +14,6 @@ const DONORS_REF = 'donors';
 const DONATIONS_REF = 'donations';
 const SUBSCRIPTIONS_REF = 'subscriptions';
 const CONNECTIONS_REF = 'stripe-connections';
-
 const PLATFORM_NAME = 'fired-up-donations';
 
 
