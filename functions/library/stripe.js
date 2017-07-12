@@ -272,3 +272,5 @@ exports.finishConnect = ( code, state ) => {
         });
     });
 }
+
+exports.findOrCreateCustomer = findOrCreateCustomer;
