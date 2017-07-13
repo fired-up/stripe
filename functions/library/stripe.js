@@ -158,6 +158,8 @@ exports.single = ( fields ) => {
         // TODO: This will use customers saved card. We want to connect
         // transactions to customer without saving their card for default
         findOrCreateCustomer( fields ).then(( customerID ) => {
+            let idempotency = {};
+
             let charge = {
                 amount: fields.amount * 100, // Amount is in cents
                 currency: 'usd',
@@ -169,7 +171,13 @@ exports.single = ( fields ) => {
                 charge.destination = { account: fields.destination };
             }
 
-            stripe.charges.create(charge, ( error, charge ) => {
+            if ( fields.idempotency ) {
+                idempotency = {
+                    idempotency_key: fields.idempotency
+                }
+            }
+
+            stripe.charges.create(charge, idempotency, ( error, charge ) => {
                 if ( !error && charge ) {
                     firebase.createDonation({
                         url: fields.url,
