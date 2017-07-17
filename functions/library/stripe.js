@@ -171,13 +171,7 @@ exports.single = ( fields ) => {
                 charge.destination = { account: fields.destination };
             }
 
-            if ( fields.idempotency ) {
-                idempotency = {
-                    idempotency_key: fields.idempotency
-                }
-            }
-
-            stripe.charges.create(charge, idempotency, ( error, charge ) => {
+            const next = ( error, charge ) => {
                 if ( !error && charge ) {
                     firebase.createDonation({
                         url: fields.url,
@@ -194,7 +188,16 @@ exports.single = ( fields ) => {
                 } else {
                     reject( error );
                 }
-            });
+            }
+            if ( fields.idempotency ) {
+                idempotency = {
+                    idempotency_key: fields.idempotency
+                }
+
+                stripe.charges.create(charge, idempotency, next);
+            } else {
+                stripe.charges.create(charge, next);
+            }            
         }).catch(( error ) => {
             reject( error );
         });
