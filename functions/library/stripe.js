@@ -189,6 +189,7 @@ exports.single = ( fields ) => {
                     reject( error );
                 }
             }
+
             if ( fields.idempotency ) {
                 idempotency = {
                     idempotency_key: fields.idempotency
@@ -197,7 +198,8 @@ exports.single = ( fields ) => {
                 stripe.charges.create(charge, idempotency, next);
             } else {
                 stripe.charges.create(charge, next);
-            }            
+            }
+            
         }).catch(( error ) => {
             reject( error );
         });
@@ -267,7 +269,7 @@ exports.finishConnect = ( code, state ) => {
                 }
             }, ( error, response, body ) => {
                 if ( !error && !body.error ) {
-                    const stripeID = body.access_token;
+                    const stripeID = body.stripe_user_id;
 
                     firebase.completeConnection( state, stripeID ).then(() => {
                         resolve();
