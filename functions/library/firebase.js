@@ -168,6 +168,9 @@ exports.createDonation = ( fields, subscriptionID ) => {
             subscription_instance: null,
             origin_system: PLATFORM_NAME,
 
+            parent: fields.parent || '',
+            campaign: fields.campaign || '',
+
             identifiers: [
                 `stripe:${ fields.transaction }`
             ],
