@@ -175,13 +175,15 @@ exports.single = ( fields ) => {
                 if ( !error && charge ) {
                     firebase.createDonation({
                         url: fields.url,
-                        amount: fields.amount,
                         donor: customerID,
+                        amount: fields.amount,                        
                         source: fields.source,
+                        parent: fields.parent,
+                        transaction: charge.id,
                         website: fields.website,
+                        campaign: fields.campaign,
                         referrer: fields.referrer,
-                        recipient: fields.recipient,
-                        transaction: charge.id
+                        recipient: fields.recipient
                     }).then(() => {
                         resolve( charge.id );
                     });
@@ -199,7 +201,7 @@ exports.single = ( fields ) => {
             } else {
                 stripe.charges.create(charge, next);
             }
-            
+
         }).catch(( error ) => {
             reject( error );
         });
