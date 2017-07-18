@@ -152,12 +152,13 @@ function verifyPlan() {
     });
 };
 
-
-exports.single = ( fields ) => {
+// trustCustomerID is for applications where customerID is gathered via external process
+// (ie this function is called like a library)
+// We never want to trust a customer ID from a payment form though
+exports.single = ( fields, trustCustomerID ) => {
     return new Promise(( resolve, reject ) => {
-        // TODO: This will use customers saved card. We want to connect
-        // transactions to customer without saving their card for default
-        findOrCreateCustomer( fields ).then(( customerID ) => {
+
+        const process = customerID => {
             let idempotency = {};
 
             let charge = {
@@ -176,7 +177,7 @@ exports.single = ( fields ) => {
                     firebase.createDonation({
                         url: fields.url,
                         donor: customerID,
-                        amount: fields.amount,                        
+                        amount: fields.amount,
                         source: fields.source,
                         parent: fields.parent,
                         transaction: charge.id,
@@ -202,9 +203,17 @@ exports.single = ( fields ) => {
                 stripe.charges.create(charge, next);
             }
 
-        }).catch(( error ) => {
-            reject( error );
-        });
+        };
+
+        if ( trustCustomerID && fields.customerID ) {
+            process( fields.customerID );
+        } else {
+            findOrCreateCustomer( fields )
+                .then( process )
+                .catch(( error ) => {
+                    reject( error );
+                });
+        }
     });
 }
 
