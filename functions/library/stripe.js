@@ -21,7 +21,7 @@ const stripe = require('stripe')( STRIPE_PRIVATE );
 
 // TODO Make these configurable
 const PLATFORM_NAME = 'fired-up-donations';
-const STATEMENT_DESCRIPTOR = 'Fired Up Stripe'
+const STATEMENT_DESCRIPTOR = 'Donation'
 const ALLOW_CONNECT_DESTINATION = true; // TODO: this should be disabled in library and enabled with config.
 
 
