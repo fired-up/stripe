@@ -79,8 +79,8 @@ exports.createCustomer = ( fields, customerID ) => {
             occupation: fields.employer,
             given_name: fields.given_name,
             family_name: fields.family_name,
-            created_date: new Date(),
-            modified_date: new Date(),
+            created_date: firebase.database.ServerValue.TIMESTAMP,
+            modified_date: firebase.database.ServerValue.TIMESTAMP,
             identifiers: [
                 `stripe:${ customerID }`
             ],
@@ -114,9 +114,9 @@ exports.createSubscription = function( fields ) {
         const ref = firebase.database().ref( `${ SUBSCRIPTIONS_REF }/${ fields.subscription }` );
 
         let formatted = {
-            action_date: new Date(),
-            created_date: new Date(),
-            modified_date: new Date(),
+            action_date: firebase.database.ServerValue.TIMESTAMP,
+            created_date: firebase.database.ServerValue.TIMESTAMP,
+            modified_date: firebase.database.ServerValue.TIMESTAMP,
 
             currency: 'USD',
             amount: fields.amount,
@@ -165,9 +165,9 @@ exports.createDonation = ( fields, subscriptionID ) => {
         const ref = firebase.database().ref( `${ DONATIONS_REF }/${ fields.transaction }` );
 
         let formatted = {
-            action_date: new Date(),
-            created_date: new Date(),
-            modified_date: new Date(),
+            action_date: firebase.database.ServerValue.TIMESTAMP,
+            created_date: firebase.database.ServerValue.TIMESTAMP,
+            modified_date: firebase.database.ServerValue.TIMESTAMP,
 
             currency: 'USD',
             amount: fields.amount,
