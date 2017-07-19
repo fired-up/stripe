@@ -24,6 +24,20 @@ function getSubscription( subscriptionID ) {
     });
 }
 
+exports.getDonor = ( key ) => {
+    return new Promise(( resolve, reject ) => {
+        const ref = firebase.database().ref( `${ DONORS_REF }/${ key }` );
+
+        ref.once('value').then(( snapshot ) => {
+            if ( snapshot.val() ) {
+                resolve( snapshot.val() );
+            } else {
+                reject('No Value');
+            }
+        });
+    });
+}
+
 exports.getCustomer = ( fields ) => {
     return new Promise(( resolve, reject ) => {
         // This will be a lot faster on FireStore
