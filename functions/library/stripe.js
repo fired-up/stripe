@@ -158,8 +158,9 @@ function verifyPlan() {
 exports.single = ( fields, trustCustomerID ) => {
     return new Promise(( resolve, reject ) => {
 
-        const process = customerID => {
-            let idempotency = {};
+        // Process the donation once we have reconciled destination and customer
+        const process = ( customerID, token ) => {
+            let settings = {};
 
             let charge = {
                 amount: fields.amount * 100, // Amount is in cents
@@ -167,10 +168,6 @@ exports.single = ( fields, trustCustomerID ) => {
                 customer: customerID,
                 description: `Donation to ${ fields.recipient }`
             };
-
-            if ( fields.destination && ALLOW_CONNECT_DESTINATION ) {
-                charge.destination = { account: fields.destination };
-            }
 
             const next = ( error, charge ) => {
                 if ( !error && charge ) {
@@ -193,23 +190,50 @@ exports.single = ( fields, trustCustomerID ) => {
                 }
             }
 
-            if ( fields.idempotency ) {
-                idempotency = {
-                    idempotency_key: fields.idempotency
+            if ( fields.idempotency || fields.destination ) {
+                if ( fields.idempotency ) {
+                    settings.idempotency_key = fields.idempotency;
                 }
 
-                stripe.charges.create(charge, idempotency, next);
+                // Set the final direct charge details here
+                if ( fields.destination && ALLOW_CONNECT_DESTINATION && token ) {
+                    settings.stripe_account = fields.destination;
+
+                    delete charge.customer;
+                    charge.source = token.id;
+                } else if ( fields.destination && ALLOW_CONNECT_DESTINATION && !token ) {
+                    throw new Error('Destination was set but token was missing - not possible to process');
+                }
+
+                stripe.charges.create(charge, settings, next);
             } else {
                 stripe.charges.create(charge, next);
             }
-
         };
 
+        // If we're using a direct charge, we have get a token for the customer
+        const routeTransaction = ( customerID ) => {
+            if ( fields.destination && ALLOW_CONNECT_DESTINATION ) {
+                stripe.tokens.create({
+                    customer: customerID,
+                }, {
+                    stripe_account: fields.destination
+                }).then(( token ) => {
+                    process( customerID, token );
+                });
+            } else if (  fields.destination && ALLOW_CONNECT_DESTINATION ) {
+                throw new Error('Destination was set but ALLOW_CONNECT_DESTINATION was false - not possible to process');
+            } else {
+                process( customerID );
+            }
+        }
+
+        // If we call this API from a library and not a form, we can trust given customer ID
         if ( trustCustomerID && fields.customerID ) {
-            process( fields.customerID );
+            routeTransaction( fields.customerID );
         } else {
             findOrCreateCustomer( fields )
-                .then( process )
+                .then( routeTransaction )
                 .catch(( error ) => {
                     reject( error );
                 });
